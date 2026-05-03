@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Todo</title>
+</head>
+
+<body style="font-family: Arial; background:#f4f4f4;">
+
+<div style="max-width:600px;margin:auto;background:white;padding:20px;border-radius:8px;">
+
+  <h2>Todo App</h2>
+
+  <input id="title" placeholder="Title" style="width:100%;padding:8px;margin-bottom:8px;">
+  <input id="desc" placeholder="Description" style="width:100%;padding:8px;margin-bottom:8px;">
+  <input id="due" type="date" style="width:100%;padding:8px;margin-bottom:8px;">
+  <input id="cat" placeholder="Category" style="width:100%;padding:8px;margin-bottom:8px;">
+
+  <button onclick="addTask()" style="padding:10px;width:100%;background:#333;color:white;border:none;">
+    Add Task
+  </button>
+
+  <h3>Tasks</h3>
+  <ul id="list" style="list-style:none;padding:0;"></ul>
+
+</div>
+
+<script>
+const API = "http://localhost:3000/tasks";
+
+async function fetchTasks() {
+  const res = await fetch(API);
+  const data = await res.json();
+
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  data.forEach(t => {
+    const li = document.createElement("li");
+
+    li.style = "background:#fafafa;padding:10px;margin:10px 0;border-radius:5px";
+
+    li.innerHTML = `
+      <b>${t.title}</b> (${t.category || "No category"})<br>
+      ${t.description || ""}<br>
+      Due: ${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "N/A"}<br>
+      Status: ${t.completed ? "✅ Done" : "⏳ Pending"}<br><br>
+
+      <button onclick="completeTask('${t._id}')">Complete</button>
+      <button onclick="deleteTask('${t._id}')">Delete</button>
+      <button onclick="editTask('${t._id}', '${t.title}', '${t.description}')">Edit</button>
+    `;
+
+    list.appendChild(li);
+  });
+}
+
+async function addTask() {
+  const title = document.getElementById("title").value;
+  const description = document.getElementById("desc").value;
+  const dueDate = document.getElementById("due").value;
+  const category = document.getElementById("cat").value;
+
+  const res = await fetch(API, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ title, description, dueDate, category })
+  });
+
+  const data = await res.json();
+
+  if (data.error) return alert(data.error);
+
+  document.getElementById("title").value = "";
+  document.getElementById("desc").value = "";
+
+  fetchTasks();
+}
+
+async function completeTask(id) {
+  const res = await fetch(API + "/" + id, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ completed: true })
+  });
+
+  const data = await res.json();
+  if (data.error) alert(data.error);
+
+  fetchTasks();
+}
+
+async function deleteTask(id) {
+  if (!confirm("Delete task?")) return;
+
+  await fetch(API + "/" + id, { method: "DELETE" });
+  fetchTasks();
+}
+
+function editTask(id, oldTitle, oldDesc) {
+  const newTitle = prompt("New title:", oldTitle);
+  const newDesc = prompt("New desc:", oldDesc);
+
+  fetch(API + "/" + id, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ title: newTitle, description: newDesc })
+  }).then(fetchTasks);
+}
+
+fetchTasks();
+</script>
+
+</body>
+</html>
