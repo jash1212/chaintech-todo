@@ -16,7 +16,7 @@ todo-app/
 **1. Install dependencies**
 ```bash
 npm init -y
-npm install express mongoose
+npm install express mongoose cors
 ```
 
 **2. Make sure MongoDB is running**
